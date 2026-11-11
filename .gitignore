@@ -1,0 +1,19 @@
+.env
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.streamlit/secrets.toml
+data/
+chroma_db/
+node_modules/
+frontend/dist/
+
+# Copyrighted manual artwork exported by scripts/export_manual_figures.py.
+frontend/public/manual-figures/
+# Optional product photo; add it to git only if you hold the rights.
+frontend/public/product/
+# Full evaluation output includes generated answers; the .md summary is kept.
+evaluation/results/*.json

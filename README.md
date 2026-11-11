@@ -1,0 +1,128 @@
+# Plum 360 Assistant
+
+A product guide and AI assistant for the **Plum 360 infusion pump**, grounded in
+its 268-page System Operating Manual. Every answer cites the manual pages it
+came from, and those pages open right in the app.
+
+> Independent reference project. Not affiliated with ICU Medical. Not a medical
+> device: do not use it for dosing, programming, or alarm response decisions.
+
+## What it does
+
+- **Product guide.** A one-page overview of the infuser: key facts, features,
+  diagrams from the manual, set-up steps, alarm priorities, care, and
+  specifications. Each fact shows its manual page (for example *Manual 11-6*),
+  and clicking it opens that page.
+- **Chat assistant.** Opens as a side drawer from any "Ask" link or the
+  *Ask about Plum 360* button, or as a full page at `#/assistant`. Answers
+  stream in word by word, show live progress ("Searching the manual",
+  "Reading the relevant pages"), and list their sources; each source opens the
+  cited page.
+- **Knows when to search.** Greetings, thanks, and "explain that more simply"
+  are answered conversationally. Device questions always go to the manual and
+  are never answered from the model's general knowledge.
+- **Safe by default.** Requests to program the pump or dose a patient are
+  refused before reaching the model. When the manual doesn't support an
+  answer, the assistant says so instead of guessing.
+
+## How it works
+
+```
+question ─► safety check ─► intent router ─┬─► conversational reply (LLM)
+                                           └─► manual search ─► relevance check ─► answer (LLM) ─► source check
+                                                (hybrid: vector + BM25, retries)        │
+                                                                                       ▼
+                                                                    streamed answer + page citations
+```
+
+| Layer | Technology |
+|---|---|
+| Agent workflow | LangGraph (`plum360_assistant/agent/`) |
+| Retrieval | Chroma + Gemini `gemini-embedding-001`, fused with BM25 keyword ranking |
+| Answers | Groq `openai/gpt-oss-120b` with fallbacks (`qwen/qwen3.8-27b`, `openai/gpt-oss-20b`, then Gemini) |
+| API | FastAPI, NDJSON streaming (`backend/main.py`) |
+| Frontend | React + Vite (`frontend/`) |
+| Manual pages | PyMuPDF renders cited pages and figures from the local PDF |
+
+## Evaluation
+
+`python -m scripts.evaluate_manual` runs 26 questions through the full
+pipeline and checks routing, whether the expected manual page was retrieved,
+whether the answer contains the expected facts, off-topic handling, and safety
+refusals. Latest run:
+
+| Check | Result |
+|---|---|
+| Routing (manual vs. conversation) | 23/23 |
+| Retrieval (expected page cited) | 19/20 |
+| Facts (answer contains expected values) | 19/20 |
+| Small talk without citations | 3/3 |
+| Off-topic declined | 1/1 |
+| Unsafe requests refused | 2/2 |
+| **Overall** | **25/26 (96%)** |
+
+The full report is in [evaluation/results/latest.md](evaluation/results/latest.md).
+Adding BM25 to vector search fixed two retrieval misses ("air trap",
+"hard limit"); the remaining miss is a value stated only in the specifications
+table, where the assistant correctly declined rather than guess.
+
+## Setup
+
+Python 3.11+ and Node 18+. From the project directory:
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install -r requirements.txt
+Copy-Item .env.example .env
+cd frontend; npm install; cd ..
+```
+
+In `.env`, set:
+
+- `GEMINI_API_KEY`: required for manual search (embeddings).
+- `GROQ_API_KEY`: recommended for answers (free tier). Without it, Gemini
+  chat models are used.
+
+See [.env.example](.env.example) for model choices and other options.
+Never commit `.env`.
+
+### Manual data (private)
+
+The manual PDF must be lawfully obtained and kept private. Put it in
+`data/raw/manuals/` (or set `MANUAL_PDF_PATH`), then build the index and
+figures once:
+
+```powershell
+python -m scripts.extract_documents data\raw\manuals\plum_360_som_pn-ifu0000340_21658851.pdf --document-id plum360_manual
+python -m scripts.chunk_documents data/processed/plum360_manual.json
+python -m scripts.index_chunks data/processed/plum360_manual_chunks.json
+python -m scripts.export_manual_figures
+```
+
+`data/` and the exported figures are git-ignored because they contain
+copyrighted manual content. Indexing and search send chunk text and queries to
+the Gemini API.
+
+## Run
+
+```powershell
+# Terminal 1: API
+.\.venv\Scripts\python.exe -m uvicorn backend.main:app --host 127.0.0.1 --port 8000 --reload
+
+# Terminal 2: frontend
+cd frontend; npm run dev
+```
+
+Open http://localhost:5173. Restart the API after editing `.env`; `--reload`
+only watches Python files. A Streamlit version of the chat is also available
+with `streamlit run app.py`.
+
+Optional: place a product photo you hold the rights to at
+`frontend/public/product/hero.jpg` to replace the illustration on the guide.
+
+## Tests
+
+```powershell
+python -m unittest discover -s tests
+```

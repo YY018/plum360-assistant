@@ -1,0 +1,492 @@
+:root {
+  --bg: #fafaf8;
+  --surface: #ffffff;
+  --surface-muted: #f2f1ed;
+  --text: #1d1d1b;
+  --text-muted: #6b6a65;
+  --text-faint: #9a9993;
+  --border: #e4e2dc;
+  --border-strong: #cfcdc5;
+  --accent: #1f4e4a;
+  --accent-hover: #173b38;
+  --notice-bg: #fbf6e9;
+  --notice-border: #e8dcb8;
+  --notice-text: #6b5518;
+  --error-text: #9b2c22;
+
+  --sans: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --mono: 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', Consolas, monospace;
+  --column: 680px;
+
+  color-scheme: light;
+  color: var(--text);
+  background: var(--bg);
+  font-family: var(--sans);
+  font-size: 15px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+}
+
+button,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+p {
+  margin: 0;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* Layout ---------------------------------------------------------------- */
+
+.layout {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 52px;
+  padding: 0 20px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+  flex-shrink: 0;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+}
+
+/* Agent mark ------------------------------------------------------------ */
+
+.agent-mark {
+  flex-shrink: 0;
+  display: block;
+}
+
+.agent-edge {
+  stroke: var(--accent);
+  stroke-width: 1.4;
+  stroke-linecap: round;
+  opacity: 0.45;
+}
+
+.agent-hub {
+  fill: var(--accent);
+}
+
+.agent-node {
+  fill: var(--bg);
+  stroke: var(--accent);
+  stroke-width: 1.4;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.agent-mark.is-active .agent-node {
+  animation: node-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes node-pulse {
+  0%, 100% { fill: var(--bg); }
+  40% { fill: var(--accent); }
+}
+
+.brand-name {
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.brand-divider {
+  color: var(--border-strong);
+}
+
+.brand-sub {
+  color: var(--text-muted);
+}
+
+.text-button {
+  border: 0;
+  background: none;
+  padding: 6px 2px;
+  font-size: 13px;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.text-button:hover:not(:disabled) {
+  color: var(--text);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.thread {
+  flex: 1;
+  overflow-y: auto;
+  padding: 40px 20px 24px;
+}
+
+.thread > * {
+  max-width: var(--column);
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Empty state ----------------------------------------------------------- */
+
+.intro {
+  padding-top: 12vh;
+}
+
+.intro-mark {
+  margin-bottom: 20px;
+}
+
+.intro h1 {
+  margin: 0 0 8px;
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+}
+
+.intro > p {
+  max-width: 52ch;
+  color: var(--text-muted);
+}
+
+.examples {
+  list-style: none;
+  margin: 28px 0 0;
+  padding: 0;
+  border-top: 1px solid var(--border);
+}
+
+.examples li {
+  border-bottom: 1px solid var(--border);
+}
+
+.examples button {
+  width: 100%;
+  padding: 12px 0;
+  border: 0;
+  background: none;
+  text-align: left;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.examples button::after {
+  content: '→';
+  float: right;
+  color: var(--text-faint);
+  transition: transform 120ms ease;
+}
+
+.examples button:hover::after {
+  color: var(--text);
+  transform: translateX(2px);
+}
+
+/* Messages -------------------------------------------------------------- */
+
+.message + .message {
+  margin-top: 28px;
+}
+
+.message-user {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.message-user p {
+  max-width: 80%;
+  padding: 9px 14px;
+  border-radius: 8px;
+  background: var(--surface-muted);
+  white-space: pre-wrap;
+}
+
+.message-assistant {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+}
+
+.message-assistant .avatar {
+  margin-top: 3px;
+}
+
+.message-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.answer {
+  display: grid;
+  gap: 10px;
+}
+
+.answer strong {
+  font-weight: 600;
+}
+
+.answer-bullet {
+  position: relative;
+  padding-left: 16px;
+  margin-top: -4px;
+}
+
+.answer-bullet::before {
+  content: '';
+  position: absolute;
+  left: 3px;
+  top: 0.75em;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--text-faint);
+}
+
+.answer-field {
+  display: grid;
+  gap: 2px;
+}
+
+.answer-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+.notice {
+  margin-top: 14px;
+  padding: 10px 12px;
+  border: 1px solid var(--notice-border);
+  border-radius: 6px;
+  background: var(--notice-bg);
+  color: var(--notice-text);
+  font-size: 13px;
+}
+
+/* Blinking caret after the last line while an answer streams in. */
+.is-streaming .answer > :last-child::after {
+  content: '';
+  display: inline-block;
+  width: 7px;
+  height: 1.05em;
+  margin-left: 3px;
+  vertical-align: -0.15em;
+  background: var(--accent);
+  animation: caret 1s steps(1, end) infinite;
+}
+
+@keyframes caret {
+  50% { opacity: 0; }
+}
+
+.stopped {
+  margin-top: 8px;
+  font-size: 13px;
+  color: var(--text-faint);
+}
+
+.message-error {
+  color: var(--error-text);
+}
+
+.pending {
+  color: var(--text-muted);
+}
+
+.pending::after {
+  content: '';
+  display: inline-block;
+  width: 1.2em;
+  text-align: left;
+  animation: ellipsis 1.2s steps(4, end) infinite;
+}
+
+@keyframes ellipsis {
+  0% { content: ''; }
+  25% { content: '.'; }
+  50% { content: '..'; }
+  75% { content: '...'; }
+}
+
+.sources {
+  list-style: none;
+  margin: 16px 0 0;
+  padding: 12px 0 0;
+  border-top: 1px dashed var(--border);
+  display: grid;
+  gap: 4px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.sources li {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.source-index {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-faint);
+  min-width: 1ch;
+}
+
+.source-pages {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--text);
+}
+
+/* Composer -------------------------------------------------------------- */
+
+.composer-area {
+  flex-shrink: 0;
+  padding: 12px 20px 16px;
+  background: var(--bg);
+}
+
+.composer {
+  max-width: var(--column);
+  margin: 0 auto;
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  padding: 8px 8px 8px 14px;
+  border: 1px solid var(--border-strong);
+  border-radius: 10px;
+  background: var(--surface);
+  transition: border-color 120ms ease;
+}
+
+.composer:focus-within {
+  border-color: var(--accent);
+}
+
+.composer textarea {
+  flex: 1;
+  min-height: 24px;
+  padding: 6px 0;
+  border: 0;
+  outline: none;
+  resize: none;
+  background: transparent;
+  line-height: 1.5;
+}
+
+.composer textarea::placeholder {
+  color: var(--text-faint);
+}
+
+.composer button {
+  flex-shrink: 0;
+  height: 34px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 6px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 120ms ease;
+}
+
+.composer button:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+
+.composer button.is-stop {
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: inset 0 0 0 1px var(--border-strong);
+}
+
+.composer button.is-stop:hover {
+  background: var(--surface-muted);
+}
+
+.composer button:disabled {
+  background: var(--border-strong);
+  cursor: default;
+}
+
+.disclaimer {
+  max-width: var(--column);
+  margin: 10px auto 0;
+  font-size: 12px;
+  color: var(--text-faint);
+  text-align: center;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.composer textarea:focus-visible {
+  outline: none;
+}
+
+@media (max-width: 560px) {
+  .thread {
+    padding-top: 24px;
+  }
+
+  .intro {
+    padding-top: 4vh;
+  }
+
+  .brand-divider,
+  .brand-sub {
+    display: none;
+  }
+
+  .message-user p {
+    max-width: 92%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+    animation: none !important;
+  }
+}
