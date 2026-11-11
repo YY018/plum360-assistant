@@ -82,6 +82,21 @@ class GuardedEndpointTests(unittest.TestCase):
             )
         self.assertEqual(allowed.status_code, 200)
 
+    def test_manual_pages_require_the_access_code_as_a_query_parameter(self) -> None:
+        self.main.guard = RequestGuard(access_code="demo123")
+        self.assertEqual(self.client.get("/manual/pages/1.png").status_code, 401)
+        with mock.patch.object(self.main, "render_page_png", return_value=b"PNG-bytes"):
+            allowed = self.client.get("/manual/pages/1.png", params={"code": "demo123"})
+        self.assertEqual(allowed.status_code, 200)
+
+    def test_built_site_is_served_from_the_api(self) -> None:
+        # frontend/dist exists in this checkout once the front end has been built.
+        if not self.main._FRONTEND_DIST.is_dir():
+            self.skipTest("front end not built")
+        home = self.client.get("/")
+        self.assertEqual(home.status_code, 200)
+        self.assertIn("<div id=\"root\">", home.text)
+
     def test_refused_questions_do_not_use_the_budget(self) -> None:
         self.main.guard = RequestGuard(per_client_per_hour=0, daily_budget=1)
         self.client.post("/chat", json={"question": "change pump settings now"})

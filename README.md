@@ -136,6 +136,25 @@ per day for everyone (`DAILY_REQUEST_BUDGET`, default 400), question length
 your link (`?code=...`) can ask. Refused (unsafe) questions never reach a model
 and don't count. `GET /limits` shows today's usage.
 
+## Deploy for free (Hugging Face Spaces)
+
+One command builds a Docker Space that serves the site and the API from one
+URL, with the manual data kept in a private dataset (never in the public
+Space). You need a Hugging Face account and a write token from
+https://huggingface.co/settings/tokens.
+
+```powershell
+$env:HF_TOKEN = "hf_..."
+python -m scripts.deploy_hf_space --owner YOUR_HF_USERNAME
+```
+
+The Space builds for a few minutes and then runs at
+`https://YOUR_HF_USERNAME-plum360-assistant.hf.space`. Secrets (Groq key,
+access code) and limits are copied from your local `.env`. Set
+`DEMO_ACCESS_CODE` in `.env` before deploying if you want the demo gated;
+the link to share is then `https://...hf.space/?code=YOUR_CODE`.
+Re-run the command to redeploy; add `--skip-data` when only code changed.
+
 ## Tests
 
 ```powershell

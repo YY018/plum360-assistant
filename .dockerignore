@@ -1,0 +1,15 @@
+.git
+.venv
+.env
+__pycache__
+**/__pycache__
+*.pyc
+node_modules
+frontend/node_modules
+frontend/dist
+# Private, copyrighted manual data: fetched at runtime from a private dataset.
+data
+frontend/public/manual-figures
+evaluation/results/*.json
+docs/*.pdf
+.vscode

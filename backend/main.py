@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import os
+from pathlib import Path
 import threading
 from contextlib import asynccontextmanager
 from typing import Iterator
@@ -11,6 +12,7 @@ from typing import Iterator
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response, StreamingResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from backend.guard import GuardError, RequestGuard
@@ -71,8 +73,10 @@ app.add_middleware(
 )
 
 # Configuration and index problems are server-side setup issues (503);
-# model failures come from the upstream Gemini API (502).
+# model failures come from the upstream model API (502).
 _ERROR_STATUS = {"configuration": 503, "index": 503, "model": 502}
+
+guard = RequestGuard.from_env()
 
 
 class ChatRequest(BaseModel):
@@ -103,8 +107,16 @@ def manual_info() -> dict:
 
 
 @app.get("/manual/pages/{page_number}.png")
-def manual_page(page_number: int) -> Response:
-    """One rendered page of the locally stored manual (1-based PDF page)."""
+def manual_page(page_number: int, code: str | None = None) -> Response:
+    """One rendered page of the locally stored manual (1-based PDF page).
+
+    Image requests cannot carry headers, so the demo access code (when one is
+    configured) is accepted as a ``code`` query parameter here.
+    """
+    try:
+        guard.check_access(code)
+    except GuardError as exc:
+        raise HTTPException(status_code=exc.status, detail=exc.message) from exc
     try:
         image = render_page_png(page_number)
     except ManualUnavailableError as exc:
@@ -114,9 +126,6 @@ def manual_page(page_number: int) -> Response:
         media_type="image/png",
         headers={"Cache-Control": "private, max-age=86400"},
     )
-
-
-guard = RequestGuard.from_env()
 
 
 def _client_id(request: Request) -> str:
@@ -188,3 +197,14 @@ def chat_stream(request: ChatRequest, http: Request) -> StreamingResponse:
         media_type="application/x-ndjson",
         headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
     )
+
+
+# Serve the built front end and the exported manual figures from this same
+# server when they exist, so one process (and one URL) runs the whole app.
+# Mounted last: the "/" mount only sees requests no API route matched.
+_FRONTEND_DIST = Path(__file__).resolve().parents[1] / "frontend" / "dist"
+_MANUAL_FIGURES = Path(__file__).resolve().parents[1] / "frontend" / "public" / "manual-figures"
+if _MANUAL_FIGURES.is_dir():
+    app.mount("/manual-figures", StaticFiles(directory=_MANUAL_FIGURES), name="manual-figures")
+if _FRONTEND_DIST.is_dir():
+    app.mount("/", StaticFiles(directory=_FRONTEND_DIST, html=True), name="site")
