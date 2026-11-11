@@ -144,8 +144,8 @@ Space). You need a Hugging Face account and a write token from
 https://huggingface.co/settings/tokens.
 
 ```powershell
-$env:HF_TOKEN = "hf_..."
-python -m scripts.deploy_hf_space --owner YOUR_HF_USERNAME
+# add HF_TOKEN=hf_... to .env (git-ignored), then:
+python -m scripts.deploy_hf_space
 ```
 
 The Space builds for a few minutes and then runs at

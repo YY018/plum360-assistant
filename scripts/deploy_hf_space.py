@@ -11,8 +11,8 @@ What it does, idempotently:
 Usage (needs a Hugging Face token with write access, from
 https://huggingface.co/settings/tokens):
 
-    set HF_TOKEN=hf_xxx            (PowerShell: $env:HF_TOKEN="hf_xxx")
-    python -m scripts.deploy_hf_space --owner YOUR_HF_USERNAME
+    # put HF_TOKEN=hf_xxx in .env (git-ignored), or set it in the environment
+    python -m scripts.deploy_hf_space
 
 Options: --space NAME (default plum360-assistant), --skip-data to reuse an
 already uploaded dataset, --private to make the Space itself private.
@@ -71,23 +71,26 @@ def _env_file_values() -> dict[str, str]:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Deploy to a Hugging Face Space.")
-    parser.add_argument("--owner", required=True, help="Your Hugging Face username.")
+    parser.add_argument("--owner", default=None, help="Your Hugging Face username (default: the token's account).")
     parser.add_argument("--space", default="plum360-assistant", help="Space name.")
     parser.add_argument("--data-repo", default=None, help="Private dataset name (default: <space>-data).")
     parser.add_argument("--skip-data", action="store_true", help="Do not re-upload the private data.")
     parser.add_argument("--private", action="store_true", help="Make the Space private too.")
     args = parser.parse_args()
 
-    token = os.getenv("HF_TOKEN", "").strip()
+    env = _env_file_values()
+    token = os.getenv("HF_TOKEN", "").strip() or env.get("HF_TOKEN", "")
     if not token:
-        parser.error("Set HF_TOKEN to a Hugging Face token with write access.")
+        parser.error("Set HF_TOKEN (environment or .env) to a Hugging Face token with write access.")
 
     from huggingface_hub import HfApi
 
     api = HfApi(token=token)
-    space_id = f"{args.owner}/{args.space}"
-    data_id = f"{args.owner}/{args.data_repo or args.space + '-data'}"
-    env = _env_file_values()
+    owner = args.owner or api.whoami().get("name")
+    if not owner:
+        parser.error("Could not determine the account name; pass --owner.")
+    space_id = f"{owner}/{args.space}"
+    data_id = f"{owner}/{args.data_repo or args.space + '-data'}"
 
     # 1. Private data -> private dataset repo.
     api.create_repo(data_id, repo_type="dataset", private=True, exist_ok=True)
@@ -150,7 +153,7 @@ def main() -> int:
 
     print(f"\nDone. The Space builds for a few minutes, then runs at:\n"
           f"  https://huggingface.co/spaces/{space_id}\n"
-          f"  https://{args.owner}-{args.space}.hf.space"
+          f"  https://{owner}-{args.space}.hf.space"
           + (f"/?code={secrets['DEMO_ACCESS_CODE']}" if secrets["DEMO_ACCESS_CODE"] else ""))
     return 0
 
