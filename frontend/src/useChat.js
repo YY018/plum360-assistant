@@ -3,6 +3,22 @@ import { API_BASE } from './api'
 
 const API_URL = `${API_BASE}/chat/stream`
 const HISTORY_LIMIT = 16
+const ACCESS_CODE_KEY = 'plum360.accessCode'
+
+// A demo access code can be given once in the link (?code=...) and is then
+// remembered for this browser session. It is never written into the page.
+function accessCode() {
+  try {
+    const fromUrl = new URLSearchParams(window.location.search).get('code')
+    if (fromUrl) {
+      window.sessionStorage.setItem(ACCESS_CODE_KEY, fromUrl)
+      window.history.replaceState(null, '', window.location.pathname + window.location.hash)
+    }
+    return window.sessionStorage.getItem(ACCESS_CODE_KEY) || ''
+  } catch {
+    return ''
+  }
+}
 
 // Reads an NDJSON response body and calls onEvent for every parsed line.
 async function readEvents(response, onEvent) {
@@ -95,7 +111,10 @@ export function useChat() {
     try {
       const response = await fetch(API_URL, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(accessCode() ? { 'X-Access-Code': accessCode() } : {}),
+        },
         body: JSON.stringify({ question: trimmed, history }),
         signal: controller.signal,
       })

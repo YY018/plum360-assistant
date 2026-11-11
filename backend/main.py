@@ -8,10 +8,12 @@ import threading
 from contextlib import asynccontextmanager
 from typing import Iterator
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response, StreamingResponse
 from pydantic import BaseModel
+
+from backend.guard import GuardError, RequestGuard
 
 from plum360_assistant.manual_pages import (
     ManualUnavailableError,
@@ -114,9 +116,40 @@ def manual_page(page_number: int) -> Response:
     )
 
 
+guard = RequestGuard.from_env()
+
+
+def _client_id(request: Request) -> str:
+    # Behind a reverse proxy, the first X-Forwarded-For entry is the real client.
+    forwarded = request.headers.get("x-forwarded-for", "")
+    if forwarded:
+        return forwarded.split(",")[0].strip()
+    return request.client.host if request.client else "unknown"
+
+
+def _admit(request: Request, question: str, *, counts: bool) -> None:
+    """Apply the demo guard; raise HTTPException with a user-facing message."""
+    try:
+        guard.check_access(request.headers.get("x-access-code"))
+        guard.check_question(question)
+        if counts:
+            guard.reserve(_client_id(request))
+    except GuardError as exc:
+        headers = {"Retry-After": str(exc.retry_after)} if exc.retry_after else None
+        raise HTTPException(status_code=exc.status, detail=exc.message, headers=headers) from exc
+
+
+@app.get("/limits")
+def limits() -> dict:
+    """Current demo limits and how much of today's budget is used."""
+    return guard.status()
+
+
 @app.post("/chat", response_model=ChatResponse)
-def chat(request: ChatRequest) -> ChatResponse:
+def chat(request: ChatRequest, http: Request) -> ChatResponse:
     ok, safety_message = validate_user_query(request.question)
+    # Refused questions never reach a model, so they don't count against limits.
+    _admit(http, request.question, counts=ok)
     if not ok:
         return ChatResponse(answer=safety_message, citations=[], safety_message=MEDICAL_SCOPE_WARNING)
 
@@ -131,9 +164,10 @@ def chat(request: ChatRequest) -> ChatResponse:
 
 
 @app.post("/chat/stream")
-def chat_stream(request: ChatRequest) -> StreamingResponse:
+def chat_stream(request: ChatRequest, http: Request) -> StreamingResponse:
     """Stream progress, answer tokens, and the final answer as NDJSON lines."""
     ok, safety_message = validate_user_query(request.question)
+    _admit(http, request.question, counts=ok)
 
     def events() -> Iterator[str]:
         if not ok:

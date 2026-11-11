@@ -126,6 +126,16 @@ with `streamlit run app.py`.
 Optional: place a product photo you hold the rights to at
 `frontend/public/product/hero.jpg` to replace the illustration on the guide.
 
+## Publishing a demo safely
+
+The Groq key stays on the server; the browser only ever talks to the FastAPI
+backend. On top of that, `backend/guard.py` limits what the public can spend:
+questions per client per hour (`RATE_LIMIT_PER_HOUR`, default 30), questions
+per day for everyone (`DAILY_REQUEST_BUDGET`, default 400), question length
+(`MAX_QUESTION_CHARS`), and an optional `DEMO_ACCESS_CODE` so only people with
+your link (`?code=...`) can ask. Refused (unsafe) questions never reach a model
+and don't count. `GET /limits` shows today's usage.
+
 ## Tests
 
 ```powershell
