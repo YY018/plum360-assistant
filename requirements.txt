@@ -8,6 +8,8 @@ langchain>=1.0,<2
 langgraph>=1.0,<2
 langchain-google-genai>=4.0,<5
 langchain-groq>=1.0,<2
+# On-device search embeddings (ONNX, CPU); no API key needed.
+fastembed>=0.4,<1
 langchain-chroma>=1.0,<2
 chromadb>=1.0,<2
 langchain-text-splitters>=1.0,<2

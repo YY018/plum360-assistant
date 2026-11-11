@@ -41,12 +41,12 @@ def get_agent() -> Any:
     from plum360_assistant.llm import create_chat_model
     from plum360_assistant.vector_store import (
         create_chroma_store,
-        create_gemini_embeddings,
+        create_embeddings,
     )
 
     try:
         settings = load_settings()
-        embeddings = create_gemini_embeddings(settings)
+        embeddings = create_embeddings(settings)
         store = create_chroma_store(settings, embeddings)
         llm = create_chat_model(settings)
     except ConfigurationError as exc:

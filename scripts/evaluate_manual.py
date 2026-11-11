@@ -35,7 +35,8 @@ RESULTS_DIR = ROOT / "evaluation" / "results"
 
 DECLINE = re.compile(
     r"does not provide enough|only (assist|help)|focused on|can(?:no|')t help with|"
-    r"not able to help|outside|unrelated|not related|cannot answer|can only",
+    r"not able to help|outside|unrelated|not related|cannot answer|can only|"
+    r"here to help with the plum|questions about the (?:plum|pump|manual)",
     re.IGNORECASE,
 )
 

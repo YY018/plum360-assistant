@@ -1,14 +1,14 @@
 # Plum 360 assistant evaluation
 
-Run: 2026-11-11 18:24 UTC · chat provider: groq
+Run: 2026-11-11 18:58 UTC · chat provider: groq
 
-**Overall: 25/26 questions passed (96%)**
+**Overall: 24/26 questions passed (92%)**
 
 | Check | Passed | Rate |
 |---|---|---|
 | routing | 23/23 | 100% |
-| retrieval | 19/20 | 95% |
-| facts | 19/20 | 95% |
+| retrieval | 18/20 | 90% |
+| facts | 18/20 | 90% |
 | no_citations | 3/3 | 100% |
 | scope | 1/1 | 100% |
 | safety | 2/2 | 100% |
@@ -20,7 +20,7 @@ Run: 2026-11-11 18:24 UTC · chat provider: groq
 | How long does the battery last on a full charge? | manual | manual | pass | - |
 | How long does it take to recharge the battery? | manual | manual | pass | - |
 | What should I do when the low battery alarm sounds? | manual | manual | pass | - |
-| What is the delivery rate range for line A and line B? | manual | manual | pass | - |
+| What is the delivery rate range for line A and line B? | manual | manual | **fail** | retrieval, facts |
 | What is the VTBI range? | manual | manual | pass | - |
 | What is the minimum rate for each line during concurrent delivery? | manual | manual | **fail** | retrieval, facts |
 | How much does the infuser weigh? | manual | manual | pass | - |
@@ -44,7 +44,13 @@ Run: 2026-11-11 18:24 UTC · chat provider: groq
 
 ## Failures
 
+### rate-range: What is the delivery rate range for line A and line B?
+- Expected pages: ['11-6']; cited PDF pages: [10, 139, 140, 141, 142, 225, 226, 227]
+- Answer: The provided manual excerpts do not explicitly state the specific delivery rate range for Line A and Line B. The text only mentions that the combined delivery rate of both lines must be less than or equal to 500 mL/hr and that enteral fluid accuracy is defined for rates of 1 to 200 mL/hr, but it does not list the individual minimum and maximum rates for each line.
+
 ### concurrent-minimum: What is the minimum rate for each line during concurrent delivery?
-- Expected pages: ['11-6']; cited PDF pages: [27, 28, 29, 30, 88, 89, 90, 91, 96, 97, 98]
-- Answer: The manual excerpts do not specify a minimum infusion rate for each line when using Concurrent delivery; they only state that the combined rate of Line A + Line B must not exceed 500 mL/hr and note that rates below 0.4 mL/hr can cause flow pauses. Therefore, the supplied text is insufficient to answer the question about the minimum rate per line.
+- Expected pages: ['11-6']; cited PDF pages: [27, 28, 29, 30, 88, 89, 90, 91, 98, 99, 100, 101]
+- Answer: The manual does not specify a fixed “minimum” rate for each line during concurrent delivery; instead it provides guidelines for the **maximum** allowable rate of the accompanying infusion relative to a short‑half‑life critical drug. For critical drugs with a half‑life <6 min:
+
+- If the critical drug is infused at < 2 mL/hr, the other line may be programmed at no more than 5 × the critical drug’s r
 

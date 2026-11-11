@@ -22,6 +22,9 @@ class Settings:
     # Which provider writes answers: "gemini" or "groq". Embeddings (manual
     # search) always use Gemini so the existing index stays valid.
     llm_provider: str = "gemini"
+    # Search embeddings: "local" (fastembed, on this machine) or "gemini".
+    embedding_provider: str = "local"
+    local_embedding_model: str = "BAAI/bge-small-en-v1.5"
     groq_api_key: str | None = None
     groq_chat_model: str = "openai/gpt-oss-120b"
     groq_chat_fallback_models: tuple[str, ...] = ()
@@ -97,6 +100,15 @@ def load_settings() -> Settings:
     if llm_provider == "groq" and not groq_api_key:
         raise ConfigurationError("LLM_PROVIDER=groq requires GROQ_API_KEY.")
 
+    # Local embeddings need no API key, so they are the default; set
+    # EMBEDDING_PROVIDER=gemini to use the Gemini embedding API instead.
+    embedding_provider = os.getenv("EMBEDDING_PROVIDER", "").strip().lower() or "local"
+    if embedding_provider not in {"local", "gemini"}:
+        raise ConfigurationError("EMBEDDING_PROVIDER must be one of: local, gemini.")
+    local_embedding_model = (
+        os.getenv("LOCAL_EMBEDDING_MODEL", "").strip() or "BAAI/bge-small-en-v1.5"
+    )
+
     return Settings(
         app_env=app_env,
         gemini_api_key=gemini_api_key,
@@ -105,6 +117,8 @@ def load_settings() -> Settings:
         gemini_chat_fallback_models=gemini_chat_fallback_models,
         chroma_persist_directory=chroma_persist_directory,
         llm_provider=llm_provider,
+        embedding_provider=embedding_provider,
+        local_embedding_model=local_embedding_model,
         groq_api_key=groq_api_key,
         groq_chat_model=groq_chat_model,
         groq_chat_fallback_models=groq_chat_fallback_models,

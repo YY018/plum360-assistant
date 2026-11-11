@@ -40,6 +40,13 @@ def tokenize(text: str) -> list[str]:
     ]
 
 
+def index_terms(text: str) -> list[str]:
+    """Words plus adjacent word pairs, so phrases like "rate range" or
+    "air trap" count as rare terms even when each word alone is common."""
+    words = tokenize(text)
+    return words + [f"{first}_{second}" for first, second in zip(words, words[1:])]
+
+
 @dataclass
 class KeywordIndex:
     """A small in-memory BM25 index; the manual has about a hundred chunks."""
@@ -49,7 +56,7 @@ class KeywordIndex:
     b: float = 0.75
 
     def __post_init__(self) -> None:
-        self._terms = [Counter(tokenize(doc["text"])) for doc in self.documents]
+        self._terms = [Counter(index_terms(doc["text"])) for doc in self.documents]
         self._lengths = [sum(terms.values()) for terms in self._terms]
         self._average = (sum(self._lengths) / len(self._lengths)) if self._lengths else 0.0
         frequency: Counter[str] = Counter()
@@ -63,7 +70,7 @@ class KeywordIndex:
 
     def search(self, query: str, top_k: int) -> list[tuple[int, float]]:
         """Return (document index, score) pairs, best first."""
-        query_terms = set(tokenize(query))
+        query_terms = set(index_terms(query))
         scores = []
         for index, terms in enumerate(self._terms):
             score = 0.0

@@ -41,10 +41,12 @@ class AnswerServiceTests(unittest.TestCase):
                 answer_question("Q", None)
         self.assertEqual(ctx.exception.kind, "model")
 
-    def test_missing_api_key_is_a_configuration_error(self) -> None:
+    def test_missing_chat_api_keys_is_a_configuration_error(self) -> None:
+        # Local embeddings need no key, but answers need Groq or Gemini.
         service.get_agent.cache_clear()
         with mock.patch.dict(
-            "os.environ", {"GEMINI_API_KEY": "", "GOOGLE_API_KEY": ""}
+            "os.environ",
+            {"GEMINI_API_KEY": "", "GOOGLE_API_KEY": "", "GROQ_API_KEY": "", "LLM_PROVIDER": ""},
         ), mock.patch("plum360_assistant.config.load_dotenv"):
             with self.assertRaises(AssistantUnavailableError) as ctx:
                 service.get_agent()

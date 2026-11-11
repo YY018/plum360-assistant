@@ -32,12 +32,62 @@ def create_gemini_embeddings(settings: Settings) -> GoogleGenerativeAIEmbeddings
     )
 
 
+LOCAL_COLLECTION_NAME = "plum360_manual_local"
+MODEL_CACHE_DIR = Path(__file__).resolve().parents[1] / "data" / "models"
+
+# BGE retrieval models expect this instruction in front of short queries.
+_BGE_QUERY_PREFIX = "Represent this sentence for searching relevant passages: "
+
+
+class LocalEmbeddings(Embeddings):
+    """On-device embeddings via fastembed (ONNX, CPU). No API key or quota.
+
+    The model (about 130 MB for bge-small) downloads once into data/models/.
+    """
+
+    def __init__(self, model_name: str, cache_dir: Path = MODEL_CACHE_DIR) -> None:
+        self.model_name = model_name
+        self.cache_dir = cache_dir
+        self._model = None
+
+    def _load(self):
+        if self._model is None:
+            from fastembed import TextEmbedding
+
+            self.cache_dir.mkdir(parents=True, exist_ok=True)
+            self._model = TextEmbedding(model_name=self.model_name, cache_dir=str(self.cache_dir))
+        return self._model
+
+    def embed_documents(self, texts: list[str]) -> list[list[float]]:
+        return [vector.tolist() for vector in self._load().embed(list(texts))]
+
+    def embed_query(self, text: str) -> list[float]:
+        if "bge" in self.model_name.lower():
+            text = _BGE_QUERY_PREFIX + text
+        return next(iter(self._load().embed([text]))).tolist()
+
+
+def create_embeddings(settings: Settings) -> Embeddings:
+    """Embeddings for the configured provider (local by default)."""
+    if settings.embedding_provider == "gemini":
+        return create_gemini_embeddings(settings)
+    return LocalEmbeddings(settings.local_embedding_model)
+
+
+def collection_for(settings: Settings) -> str:
+    """Each embedding provider has its own collection (vector sizes differ)."""
+    if settings.embedding_provider == "gemini":
+        return DEFAULT_COLLECTION_NAME
+    return LOCAL_COLLECTION_NAME
+
+
 def create_chroma_store(
     settings: Settings,
     embeddings: Embeddings,
-    collection_name: str = DEFAULT_COLLECTION_NAME,
+    collection_name: str | None = None,
 ) -> Chroma:
     """Open or create the persistent local Chroma collection."""
+    collection_name = collection_name or collection_for(settings)
     persist_directory = Path(settings.chroma_persist_directory)
     persist_directory.mkdir(parents=True, exist_ok=True)
     return Chroma(

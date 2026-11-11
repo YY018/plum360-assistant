@@ -8,7 +8,7 @@ import json
 from plum360_assistant.config import ConfigurationError, load_settings
 from plum360_assistant.vector_store import (
     create_chroma_store,
-    create_gemini_embeddings,
+    create_embeddings,
     search_chunks,
 )
 
@@ -19,12 +19,12 @@ def main() -> int:
     )
     parser.add_argument("query", help="Question or search phrase.")
     parser.add_argument("--top-k", type=int, default=5)
-    parser.add_argument("--collection", default="plum360_manual")
+    parser.add_argument("--collection", default=None, help="Defaults to the collection for EMBEDDING_PROVIDER.")
     args = parser.parse_args()
 
     settings = load_settings()
     try:
-        embeddings = create_gemini_embeddings(settings)
+        embeddings = create_embeddings(settings)
     except ConfigurationError as exc:
         parser.error(str(exc))
 

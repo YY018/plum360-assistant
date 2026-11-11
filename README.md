@@ -38,8 +38,8 @@ question ─► safety check ─► intent router ─┬─► conversational re
 | Layer | Technology |
 |---|---|
 | Agent workflow | LangGraph (`plum360_assistant/agent/`) |
-| Retrieval | Chroma + Gemini `gemini-embedding-001`, fused with BM25 keyword ranking |
-| Answers | Groq `openai/gpt-oss-120b` with fallbacks (`qwen/qwen3.8-27b`, `openai/gpt-oss-20b`, then Gemini) |
+| Retrieval | Chroma + local `BAAI/bge-small-en-v1.5` embeddings (fastembed), fused with BM25 keyword and phrase ranking |
+| Answers | Groq `openai/gpt-oss-120b` with fallbacks (`qwen/qwen3.8-27b`, `openai/gpt-oss-20b`); Gemini optional |
 | API | FastAPI, NDJSON streaming (`backend/main.py`) |
 | Frontend | React + Vite (`frontend/`) |
 | Manual pages | PyMuPDF renders cited pages and figures from the local PDF |
@@ -54,17 +54,23 @@ refusals. Latest run:
 | Check | Result |
 |---|---|
 | Routing (manual vs. conversation) | 23/23 |
-| Retrieval (expected page cited) | 19/20 |
-| Facts (answer contains expected values) | 19/20 |
+| Retrieval (expected page cited) | 18/20 |
+| Facts (answer contains expected values) | 18/20 |
 | Small talk without citations | 3/3 |
 | Off-topic declined | 1/1 |
 | Unsafe requests refused | 2/2 |
-| **Overall** | **25/26 (96%)** |
+| **Overall** | **24/26 (92%)** |
 
-The full report is in [evaluation/results/latest.md](evaluation/results/latest.md).
-Adding BM25 to vector search fixed two retrieval misses ("air trap",
-"hard limit"); the remaining miss is a value stated only in the specifications
-table, where the assistant correctly declined rather than guess.
+This run uses Groq for answers and local embeddings for search, with no Gemini
+calls. The full report is in [evaluation/results/latest.md](evaluation/results/latest.md).
+
+Retrieval notes: vector search alone found the right page in the top 3 for
+9 of 16 probe questions with the local model; fusing BM25 keyword ranking
+raised that to 14, and adding two-word phrase terms to 18 of 20 on a wider
+set. Both remaining misses are values in the dense specifications table
+(manual 11-6); for one the assistant declined instead of guessing, for the
+other it gave an imprecise lower bound. (With Gemini embeddings the same
+pipeline scored 25/26.)
 
 ## Setup
 
@@ -78,11 +84,9 @@ Copy-Item .env.example .env
 cd frontend; npm install; cd ..
 ```
 
-In `.env`, set:
-
-- `GEMINI_API_KEY`: required for manual search (embeddings).
-- `GROQ_API_KEY`: recommended for answers (free tier). Without it, Gemini
-  chat models are used.
+In `.env`, set `GROQ_API_KEY` (free at console.groq.com). That is the only
+key needed: manual search runs locally, and its model (about 130 MB) downloads
+once into `data/models/`. `GEMINI_API_KEY` is optional; see `.env.example`.
 
 See [.env.example](.env.example) for model choices and other options.
 Never commit `.env`.
@@ -101,8 +105,9 @@ python -m scripts.export_manual_figures
 ```
 
 `data/` and the exported figures are git-ignored because they contain
-copyrighted manual content. Indexing and search send chunk text and queries to
-the Gemini API.
+copyrighted manual content. With local embeddings, manual text and search
+queries stay on this machine; only the question and the retrieved excerpts are
+sent to Groq to write the answer.
 
 ## Run
 
