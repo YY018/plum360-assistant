@@ -136,24 +136,27 @@ per day for everyone (`DAILY_REQUEST_BUDGET`, default 400), question length
 your link (`?code=...`) can ask. Refused (unsafe) questions never reach a model
 and don't count. `GET /limits` shows today's usage.
 
-## Deploy for free (Hugging Face Spaces)
+## Deploy for free on Render
 
-One command builds a Docker Space that serves the site and the API from one
-URL, with the manual data kept in a private dataset (never in the public
-Space). You need a Hugging Face account and a write token from
-https://huggingface.co/settings/tokens.
+Render builds the `Dockerfile` from this public repository and runs the site and
+API as one web service (`render.yaml` describes it). The copyrighted manual
+data is not in this repository, so the server downloads it at start-up from a
+second, private GitHub repository.
 
-```powershell
-# add HF_TOKEN=hf_... to .env (git-ignored), then:
-python -m scripts.deploy_hf_space
-```
+1. **Private data repo.** Create an empty private repo (for example
+   `plum360-assistant-data`) and push the contents of `data/raw/manuals/`,
+   `data/processed/`, `data/chroma_db/` and `frontend/public/manual-figures/`
+   to it, keeping those folder paths.
+2. **Read-only token.** At github.com/settings/personal-access-tokens create a
+   fine-grained token limited to that one repo with *Contents: Read-only*.
+3. **Render.** At render.com choose *New, Blueprint*, connect this repository,
+   and enter the secrets when asked: `GROQ_API_KEY`, `DEMO_ACCESS_CODE`,
+   `DATA_REPO` (`owner/plum360-assistant-data`) and `DATA_REPO_TOKEN`.
 
-The Space builds for a few minutes and then runs at
-`https://YOUR_HF_USERNAME-plum360-assistant.hf.space`. Secrets (Groq key,
-access code) and limits are copied from your local `.env`. Set
-`DEMO_ACCESS_CODE` in `.env` before deploying if you want the demo gated;
-the link to share is then `https://...hf.space/?code=YOUR_CODE`.
-Re-run the command to redeploy; add `--skip-data` when only code changed.
+The service gets a URL like `https://plum360-assistant.onrender.com`; with an
+access code set, share `https://.../?code=YOUR_CODE`. The free plan has 512 MB
+of memory (the app uses about 350 MB) and sleeps after 15 minutes without
+traffic, so the first visit after a pause takes about a minute.
 
 ## Tests
 

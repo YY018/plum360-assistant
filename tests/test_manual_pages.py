@@ -55,9 +55,13 @@ class ManualPagesTests(unittest.TestCase):
     def test_endpoints_serve_info_and_pages(self) -> None:
         from fastapi.testclient import TestClient
 
-        from backend.main import app
+        from backend import main
+        from backend.guard import RequestGuard
 
-        client = TestClient(app)
+        client = TestClient(main.app)
+        guard_patch = mock.patch.object(main, "guard", RequestGuard(per_client_per_hour=0, daily_budget=0))
+        guard_patch.start()
+        self.addCleanup(guard_patch.stop)
         info = client.get("/manual").json()
         self.assertEqual(info, {"available": True, "page_count": 3, "labels": {"1-1": 2, "1-2": 3}})
 
@@ -69,8 +73,13 @@ class ManualPagesTests(unittest.TestCase):
     def test_missing_pdf_is_reported_as_unavailable(self) -> None:
         from fastapi.testclient import TestClient
 
-        from backend.main import app
+        from backend import main
+        from backend.guard import RequestGuard
 
+        app = main.app
+        guard_patch = mock.patch.object(main, "guard", RequestGuard(per_client_per_hour=0, daily_budget=0))
+        guard_patch.start()
+        self.addCleanup(guard_patch.stop)
         with mock.patch.dict(os.environ, {"MANUAL_PDF_PATH": str(Path(self.tmp.name) / "missing.pdf")}):
             _clear_caches()
             client = TestClient(app)

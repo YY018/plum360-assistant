@@ -2,7 +2,6 @@
 
 from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_core.runnables import Runnable
-from langchain_google_genai import ChatGoogleGenerativeAI
 from pydantic import SecretStr
 
 from plum360_assistant.config import ConfigurationError, Settings
@@ -12,7 +11,10 @@ from plum360_assistant.config import ConfigurationError, Settings
 _REQUEST_TIMEOUT_SECONDS = 25
 
 
-def _gemini_client(settings: Settings, model: str) -> ChatGoogleGenerativeAI:
+def _gemini_client(settings: Settings, model: str) -> BaseChatModel:
+    # Imported here so a Groq-only deployment never loads the Gemini libraries.
+    from langchain_google_genai import ChatGoogleGenerativeAI
+
     return ChatGoogleGenerativeAI(
         model=model,
         api_key=SecretStr(settings.gemini_api_key or ""),

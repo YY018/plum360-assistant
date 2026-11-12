@@ -15,6 +15,8 @@ from fastapi.responses import Response, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
+from dotenv import load_dotenv
+
 from backend.guard import GuardError, RequestGuard
 
 from plum360_assistant.manual_pages import (
@@ -76,6 +78,8 @@ app.add_middleware(
 # model failures come from the upstream model API (502).
 _ERROR_STATUS = {"configuration": 503, "index": 503, "model": 502}
 
+# Read .env first so the access code and limits set there are honoured locally.
+load_dotenv(Path(__file__).resolve().parents[1] / ".env", override=False)
 guard = RequestGuard.from_env()
 
 

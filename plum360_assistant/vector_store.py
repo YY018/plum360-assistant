@@ -9,7 +9,6 @@ from typing import Any
 from langchain_chroma import Chroma
 from langchain_core.documents import Document
 from langchain_core.embeddings import Embeddings
-from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from pydantic import SecretStr
 
 from plum360_assistant.config import ConfigurationError, Settings
@@ -18,12 +17,14 @@ from plum360_assistant.config import ConfigurationError, Settings
 DEFAULT_COLLECTION_NAME = "plum360_manual"
 
 
-def create_gemini_embeddings(settings: Settings) -> GoogleGenerativeAIEmbeddings:
+def create_gemini_embeddings(settings: Settings) -> Embeddings:
     """Create the Gemini embedding client without making a request."""
     if not settings.gemini_api_key:
         raise ConfigurationError(
             "GEMINI_API_KEY (or GOOGLE_API_KEY) is required to generate or query embeddings."
         )
+
+    from langchain_google_genai import GoogleGenerativeAIEmbeddings
 
     return GoogleGenerativeAIEmbeddings(
         model=settings.gemini_embedding_model,

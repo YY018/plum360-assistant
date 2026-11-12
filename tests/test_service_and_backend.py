@@ -62,6 +62,12 @@ class BackendTests(unittest.TestCase):
 
         self.main = main
         self.client = TestClient(main.app)
+        # An open guard, so results never depend on the developer's .env.
+        from backend.guard import RequestGuard
+
+        patcher = mock.patch.object(main, "guard", RequestGuard(per_client_per_hour=0, daily_budget=0, max_question_chars=0))
+        patcher.start()
+        self.addCleanup(patcher.stop)
 
     def test_chat_passes_request_history_and_returns_citations(self) -> None:
         with mock.patch.object(
@@ -95,6 +101,12 @@ class StreamingBackendTests(unittest.TestCase):
 
         self.main = main
         self.client = TestClient(main.app)
+        # An open guard, so results never depend on the developer's .env.
+        from backend.guard import RequestGuard
+
+        patcher = mock.patch.object(main, "guard", RequestGuard(per_client_per_hour=0, daily_budget=0, max_question_chars=0))
+        patcher.start()
+        self.addCleanup(patcher.stop)
 
     def _events(self, response) -> list[dict]:
         import json

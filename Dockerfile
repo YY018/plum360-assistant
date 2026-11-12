@@ -1,7 +1,7 @@
-# Builds the front end, installs the Python app, bakes the embedding model into
-# the image, and serves everything from one FastAPI process on port 7860
-# (the port Hugging Face Spaces expects). Private manual data is fetched at
-# start-up by scripts/fetch_private_data.py when HF_DATA_REPO is configured.
+# Builds the front end, installs the Python app, bakes the local search model
+# into the image, and serves site + API from one FastAPI process.
+# Private manual data is fetched at start-up by scripts/fetch_private_data.py
+# when DATA_REPO is configured. Render sets PORT (10000 by default).
 
 FROM node:22-alpine AS web
 WORKDIR /web
@@ -19,8 +19,7 @@ COPY . ./
 COPY --from=web /web/dist ./frontend/dist
 # Download the local embedding model once, at build time.
 RUN python -c "from plum360_assistant.vector_store import LocalEmbeddings; LocalEmbeddings('BAAI/bge-small-en-v1.5').embed_query('warm up')"
-# Hugging Face Spaces runs containers as user 1000.
 RUN useradd -m -u 1000 app && chown -R app:app /app
 USER app
-EXPOSE 7860
-CMD ["sh", "-c", "python -m scripts.fetch_private_data && python -m uvicorn backend.main:app --host 0.0.0.0 --port ${PORT:-7860}"]
+EXPOSE 10000
+CMD ["sh", "-c", "python -m scripts.fetch_private_data && python -m uvicorn backend.main:app --host 0.0.0.0 --port ${PORT:-10000}"]
