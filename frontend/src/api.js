@@ -22,6 +22,14 @@ export function accessCode() {
   }
 }
 
+export function setAccessCode(code) {
+  try {
+    window.sessionStorage.setItem(ACCESS_CODE_KEY, code.trim())
+  } catch {
+    // Storage unavailable; the code only lasts until the next reload.
+  }
+}
+
 export function manualPageUrl(page) {
   const code = accessCode()
   return `${API_BASE}/manual/pages/${page}.png${code ? `?code=${encodeURIComponent(code)}` : ''}`

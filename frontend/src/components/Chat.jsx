@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, useState } from 'react'
 
+import { setAccessCode } from '../api'
 import { useApp } from '../appContext'
 import { AgentMark, greeting } from './AgentMark'
 
@@ -126,7 +127,40 @@ function Sources({ message }) {
   )
 }
 
-function Message({ message }) {
+/** Shown when the server asks for the demo access code. */
+function AccessCodePrompt({ message, onAsk }) {
+  const [code, setCode] = useState('')
+  const inputId = useId()
+  const submit = (event) => {
+    event.preventDefault()
+    if (!code.trim()) return
+    setAccessCode(code)
+    onAsk(message.question, { retry: true })
+  }
+  return (
+    <form className="code-prompt" onSubmit={submit}>
+      <label htmlFor={inputId}>
+        This demo is invite-only. Enter the access code you were given to continue.
+      </label>
+      <div className="code-prompt-row">
+        <input
+          id={inputId}
+          type="password"
+          value={code}
+          onChange={(event) => setCode(event.target.value)}
+          placeholder="Access code"
+          autoComplete="off"
+          autoFocus
+        />
+        <button type="submit" disabled={!code.trim()}>
+          Continue
+        </button>
+      </div>
+    </form>
+  )
+}
+
+function Message({ message, onAsk }) {
   if (message.role === 'user') {
     return (
       <div className="message message-user">
@@ -141,7 +175,9 @@ function Message({ message }) {
     <article className="message message-assistant" aria-busy={message.streaming || undefined}>
       <AgentMark size={18} active={message.streaming} className="avatar" />
       <div className="message-body">
-        {message.error ? (
+        {message.error && message.needsCode ? (
+          <AccessCodePrompt message={message} onAsk={onAsk} />
+        ) : message.error ? (
           <p className="message-error">{message.content}</p>
         ) : waiting ? (
           <p className="pending">{STAGE_LABELS[message.stage] || STAGE_LABELS.thinking}</p>
@@ -196,7 +232,7 @@ export function ChatThread({ messages, loading, onAsk, compact = false }) {
       {messages.length === 0 ? (
         <ChatIntro onAsk={onAsk} compact={compact} />
       ) : (
-        messages.map((message) => <Message key={message.id} message={message} />)
+        messages.map((message) => <Message key={message.id} message={message} onAsk={onAsk} />)
       )}
       <div ref={endRef} />
     </>

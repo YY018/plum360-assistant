@@ -378,3 +378,55 @@
     opacity: 1;
   }
 }
+
+/* Access code prompt ------------------------------------------------------ */
+
+.code-prompt {
+  display: grid;
+  gap: 10px;
+  max-width: 420px;
+}
+
+.code-prompt label {
+  font-size: 14px;
+  color: var(--text-muted);
+}
+
+.code-prompt-row {
+  display: flex;
+  gap: 8px;
+}
+
+.code-prompt input {
+  flex: 1;
+  min-width: 0;
+  height: 38px;
+  padding: 0 12px;
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  background: var(--surface);
+  font: inherit;
+  color: var(--text);
+}
+
+.code-prompt input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.code-prompt button {
+  height: 38px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--accent);
+  color: #fff;
+  font: inherit;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.code-prompt button:disabled {
+  background: var(--border-strong);
+  cursor: default;
+}

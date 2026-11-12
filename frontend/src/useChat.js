@@ -45,19 +45,21 @@ export function useChat() {
       previous.map((message) => (message.id === id ? { ...message, ...patch } : message)),
     )
 
-  const ask = useCallback(async (question) => {
+  // `retry` replaces the failed turn (its question and error) instead of repeating it.
+  const ask = useCallback(async (question, { retry = false } = {}) => {
     const trimmed = (question || '').trim()
     if (!trimmed || loadingRef.current) return false
+    const base = retry ? messagesRef.current.slice(0, -2) : messagesRef.current
 
     // The API is stateless: send prior completed turns as history.
-    const history = messagesRef.current
+    const history = base
       .filter((message) => !message.error && !message.streaming && message.content)
       .map(({ role, content }) => ({ role, content }))
       .slice(-HISTORY_LIMIT)
 
     const id = nextId++
-    setMessages((previous) => [
-      ...previous,
+    setMessages([
+      ...base,
       { id: nextId++, role: 'user', content: trimmed },
       { id, role: 'assistant', content: '', stage: 'thinking', streaming: true },
     ])
@@ -104,7 +106,9 @@ export function useChat() {
       })
       if (!response.ok || !response.body) {
         const data = await response.json().catch(() => ({}))
-        throw new Error(data.detail || `The server responded with ${response.status}.`)
+        const failed = new Error(data.detail || `The server responded with ${response.status}.`)
+        failed.status = response.status
+        throw failed
       }
 
       typing.frame = requestAnimationFrame(tick)
@@ -148,7 +152,7 @@ export function useChat() {
         error instanceof TypeError
           ? `Could not reach the assistant API at ${API_LABEL}. Is the backend running?`
           : error.message
-      finish({ content, error: true })
+      finish({ content, error: true, needsCode: error.status === 401, question: trimmed })
     }
     return true
   }, [])
